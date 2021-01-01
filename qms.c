@@ -89,7 +89,7 @@ qms_setnote(int track, int voice, int velocity, int midipitch)
 }
 
 void
-qms_advance(int nsamples)
+qms_advance(unsigned int nsamples)
 {
     int32_t left, right;
     int32_t amp;
