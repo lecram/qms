@@ -82,9 +82,14 @@ midipitch2step(int m)
 }
 
 void
-qms_setnote(int track, int voice, int velocity, int midipitch)
+qms_setvelocity(int track, int voice, int velocity)
 {
     voices[track][voice].velocity = velocity;
+}
+
+void
+qms_setnote(int track, int voice, int midipitch)
+{
     voices[track][voice].phase_step = midipitch2step(midipitch);
 }
 
