@@ -14,7 +14,7 @@
 
 void qms_init();
 void qms_setpac(int track, int pac);
-void qms_setvolume(int track, int midivol);
+void qms_setvol(int track, int midivol);
 void qms_setpan(int track, int midipan);
 void qms_setnote(int track, int voice, int velocity, int midipitch);
 void qms_advance(int nsamples);

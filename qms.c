@@ -62,7 +62,7 @@ qms_setpac(int track, int pac)
 }
 
 void
-qms_setvolume(int track, int midivol)
+qms_setvol(int track, int midivol)
 {
     tracks[track].vol = midivol;
 }
