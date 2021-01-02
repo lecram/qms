@@ -125,3 +125,35 @@ qms_advance(unsigned int nsamples)
         qms_putsample((int16_t) left, (int16_t) right);
     }
 }
+
+void
+qms_runevents(Event *evs, unsigned int nevs)
+{
+    uint32_t total_samples = 0;
+    EvType ev_type;
+    unsigned int track, voice, arg;
+    for (; nevs--; evs++) {
+        qms_advance(evs->offset - total_samples);
+        total_samples = evs->offset;
+        track = evs->event >> 28;
+        voice = evs->event >> 24 & 7;
+        ev_type = evs->event >> 16 & 0xFF;
+        arg = evs->event & 0xFFFF;
+        switch (ev_type) {
+        case PAC:
+            qms_setpac(track, arg);
+            break;
+        case VOL:
+            qms_setvol(track, arg);
+            break;
+        case PAN:
+            qms_setpan(track, arg);
+            break;
+        case VEL:
+            qms_setvelocity(track, voice, arg);
+            break;
+        case PITCH:
+            qms_setnote(track, voice, arg);
+        }
+    }
+}
