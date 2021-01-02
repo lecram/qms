@@ -22,6 +22,12 @@ typedef struct Event {
     uint32_t event;
 } Event;
 
+#define qms_ev_pac(t, pac)      (((t) << 28) | (PAC << 16) | (pac))
+#define qms_ev_vol(t, vol)      (((t) << 28) | (VOL << 16) | (vol))
+#define qms_ev_pan(t, pan)      (((t) << 28) | (PAN << 16) | (pan))
+#define qms_ev_vel(t, v, vel)   (((t) << 28) | ((v) << 24) | (VEL << 16) | (vel))
+#define qms_ev_pitch(t, v, pit) (((t) << 28) | ((v) << 24) | (PITCH << 16) | (pit))
+
 void qms_init();
 void qms_setpac(int track, int pac);
 void qms_setvol(int track, int midivol);
