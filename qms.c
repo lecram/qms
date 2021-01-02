@@ -17,9 +17,9 @@ static int16_t wavetables[NPACS][N];
 static TrackState tracks[NTRACKS];
 static VoiceState voices[NTRACKS][NVOICES];
 
-/* integer frequencies of MIDI notes 0-11 multiplied by N */
-/* to be used as fixed point with NEXP.NEXP precision */
-/* python: [int(440 * 2**((m-69)/12) * N +0.5) for m in range(12)] */
+/* integer frequencies of MIDI notes 0-11 multiplied by N
+ * to be used as fixed point with NEXP.NEXP precision
+ * python: [int(440 * 2**((m-69)/12) * N + 0.5) for m in range(12)] */
 static int freq[12] =
   {16744, 17740, 18795, 19912, 21096, 22351,
    23680, 25088, 26580, 28160, 29834, 31609};
