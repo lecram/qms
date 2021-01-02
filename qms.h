@@ -12,7 +12,7 @@
 /* sample rate in samples per second*/
 #define R       44100
 
-typedef enum EvType {PAC, VOL, PAN, VEL, PITCH} EvType;
+typedef enum EvType {END, PAC, VOL, PAN, VEL, PITCH} EvType;
 
 typedef struct Event {
     uint32_t offset;

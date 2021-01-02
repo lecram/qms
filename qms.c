@@ -140,6 +140,9 @@ qms_runevents(Event *evs, unsigned int nevs)
         ev_type = evs->event >> 16 & 0xFF;
         arg = evs->event & 0xFFFF;
         switch (ev_type) {
+        case END:
+            nevs = 0;
+            break;
         case PAC:
             qms_setpac(track, arg);
             break;
