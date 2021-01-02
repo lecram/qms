@@ -20,7 +20,7 @@ static VoiceState voices[NTRACKS][NVOICES];
 /* integer frequencies of MIDI notes 0-11 multiplied by N
  * to be used as fixed point with NEXP.NEXP precision
  * python: [int(440 * 2**((m-69)/12) * N + 0.5) for m in range(12)] */
-static int freq[12] =
+static unsigned int freq[12] =
   {16744, 17740, 18795, 19912, 21096, 22351,
    23680, 25088, 26580, 28160, 29834, 31609};
 
@@ -73,10 +73,10 @@ qms_setpan(int track, int midipan)
     tracks[track].pan = midipan - 64;
 }
 
-static int
+static unsigned int
 midipitch2step(int m)
 {
-    int o, n; /* m = o * 12 + n */
+    unsigned int o, n; /* m = o * 12 + n */
     for (n = m, o = 0; n >= 12; n -= 12, o++) ;
     return (freq[n] << (o+NEXP)) / R;
 }
