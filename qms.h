@@ -1,3 +1,6 @@
+#ifndef QMS_H
+#define QMS_H
+
 #include <stdint.h>
 
 #define NTRACKS     16
@@ -28,3 +31,5 @@ void qms_setnote(int track, int voice, int midipitch);
 void qms_advance(unsigned int nsamples);
 void qms_runevents(Event *evs, unsigned int nevs);
 void qms_putsample(int16_t left, int16_t right);
+
+#endif /* QMS_H */
