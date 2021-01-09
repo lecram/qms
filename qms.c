@@ -7,8 +7,8 @@ typedef struct TrackState {
 } TrackState;
 
 typedef struct VoiceState {
-    unsigned int phase_acc;   /* fixed point with NEXP.NEXP precision */
-    unsigned int phase_step;  /* fixed point with NEXP.NEXP precision */
+    unsigned int phase_acc;   /* fixed point with NEXP.16 precision */
+    unsigned int phase_step;  /* fixed point with NEXP.16 precision */
     int velocity;    /* 0-127 */
     /* int note_age; */
 } VoiceState;
@@ -16,13 +16,6 @@ typedef struct VoiceState {
 static int16_t wavetables[NPACS][N];
 static TrackState tracks[NTRACKS];
 static VoiceState voices[NTRACKS][NVOICES];
-
-/* integer frequencies of MIDI notes 0-11 multiplied by N
- * to be used as fixed point with NEXP.NEXP precision
- * python: [int(440 * 2**((m-69)/12) * N + 0.5) for m in range(12)] */
-static unsigned int freq[12] =
-  {16744, 17740, 18795, 19912, 21096, 22351,
-   23680, 25088, 26580, 28160, 29834, 31609};
 
 /* sine approximation using Bhaskara I's formula
  * input is in [0;2048]
@@ -37,6 +30,22 @@ sinb1(unsigned int i)
     n = 360*c;
     d = 162005 - (90*c >> 15);
     return s * (int16_t) (n/d);
+}
+
+/* approximation of exp(x)-1 using power series
+ * both input and output are U0.32 */
+uint32_t
+fxp_expm1(uint32_t x)
+{
+    uint32_t e, t;
+    int i;
+    e = 0;
+    t = x;
+    for (i = 2; t; i++) {
+        e += t;
+        t = (t>>13) * (x>>19) / i;
+    }
+    return e;
 }
 
 void
@@ -77,8 +86,12 @@ static unsigned int
 midipitch2step(int m)
 {
     unsigned int o, n; /* m = o * 12 + n */
-    for (n = m, o = 0; n >= 12; n -= 12, o++) ;
-    return (freq[n] << (o+NEXP)) / R;
+    uint32_t c = 0x0EC98200; /* ln(2^(1/12)) in U0.32 */
+    for (n = m+3, o = 0; n >= 12; n -= 12, o++) ;
+    /* the following takes advantage of assumed constants:
+     *   R = 44100 = 440 * 2205 / 22
+     *   N = 2048 = 2^11 */
+    return ((fxp_expm1(n*c)>>5) * 22 / (2205<<6) + (22<<21) / 2205) << o;
 }
 
 void
@@ -112,11 +125,11 @@ qms_advance(unsigned int nsamples)
             pac = wavetables[track->pac];
             for (vi = 0; vi < NVOICES; vi++) {
                 voice = &voices[ti][vi];
-                amp = pac[voice->phase_acc >> NEXP] * voice->velocity >> 7;
+                amp = pac[voice->phase_acc >> 16] * voice->velocity >> 7;
                 left  += amp * lvol >> 14;
                 right += amp * rvol >> 14;
                 voice->phase_acc += voice->phase_step;
-                voice->phase_acc &= (1 << (NEXP << 1)) - 1;
+                voice->phase_acc &= (1 << (NEXP + 16)) - 1;
             }
         }
         /* saturate before casting down to 16-bit to avoid bad behavior on overflow */
