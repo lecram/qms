@@ -2,8 +2,8 @@
 
 typedef struct TrackState {
     int pac;   /* < NPACS */
-    int vol;   /* 0-127 */
-    int pan;   /* (-64)-(+63) */
+    int vol;   /* 127-0         default (zero) means maximum */
+    int pan;   /* (-64)-(+63)   default (zero) means center */
 } TrackState;
 
 typedef struct VoiceState {
@@ -73,7 +73,7 @@ qms_setpac(int track, int pac)
 void
 qms_setvol(int track, int midivol)
 {
-    tracks[track].vol = midivol;
+    tracks[track].vol = 127 - midivol;
 }
 
 void
@@ -120,8 +120,8 @@ qms_advance(unsigned int nsamples)
         left = right = 0;
         for (ti = 0; ti < NTRACKS; ti++) {
             track = &tracks[ti];
-            lvol = (63 - track->pan) * track->vol;
-            rvol = (63 + track->pan) * track->vol;
+            lvol = (63 - track->pan) * (127 - track->vol);
+            rvol = (63 + track->pan) * (127 - track->vol);
             pac = wavetables[track->pac];
             for (vi = 0; vi < NVOICES; vi++) {
                 voice = &voices[ti][vi];
