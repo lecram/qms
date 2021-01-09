@@ -1,0 +1,9 @@
+a.out
+test_*
+*.o
+*.txt
+*.seq
+*.mid
+*.flac
+tmp/
+!doc/*.txt
