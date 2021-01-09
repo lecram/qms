@@ -1,14 +1,10 @@
 #ifndef SMF_H
 #define SMF_H
 
-#define NEVENTS     (1 << 14)
-
-extern Event midi_evs[NEVENTS];
-
 typedef enum SMFError {
     SMF_OK, SMF_NOFILE, SMF_BADSIG, SMF_BADFMT, SMF_BADDIV, SMF_TOOBIG
 } SMFError;
 
-SMFError qms_smf2evs(const char *fname, int *pnevs);
+SMFError qms_smf2evs(const char *fname, Event *evs, int maxnevs, int *pnevs);
 
 #endif /* SMF_H */

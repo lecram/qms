@@ -7,8 +7,6 @@
 #include "qms.h"
 #include "smf.h"
 
-Event midi_evs[NEVENTS];
-
 typedef struct TempoChange {
     uint32_t offset;
     uint32_t usecs_per_quarter;
@@ -58,7 +56,7 @@ cmp_offset(const void *a, const void *b)
 }
 
 void
-ticks2samples(uint16_t ticks_per_quarter, int ntcs, int nevs)
+ticks2samples(uint16_t ticks_per_quarter, int ntcs, Event *evs, int nevs)
 {
     uint32_t usecs_per_quarter, offset, total_samples;
     uint32_t delta, usecs, samples;
@@ -70,20 +68,20 @@ ticks2samples(uint16_t ticks_per_quarter, int ntcs, int nevs)
     for (evi = 0; evi < nevs; evi++) {
         while (tci < ntcs && tempo_changes[tci].offset <= offset)
             usecs_per_quarter = tempo_changes[tci++].usecs_per_quarter;
-        delta = midi_evs[evi].offset - offset;
+        delta = evs[evi].offset - offset;
         usecs = delta * usecs_per_quarter / ticks_per_quarter;
         samples = usecs * (R/100) / 10000;
         total_samples += samples;
-        midi_evs[evi].offset = total_samples;
+        evs[evi].offset = total_samples;
         offset += delta;
     }
 }
 
-#define add_ev(ev)  (midi_evs[nevs++] = (Event) {offset, (ev)})
+#define add_ev(ev)  (evs[nevs++] = (Event) {offset, (ev)})
 #define add_tc(upq) (tempo_changes[ntcs++] = (TempoChange) {offset, (upq)})
 
 SMFError
-qms_smf2evs(const char *fname, int *pnevs)
+qms_smf2evs(const char *fname, Event *evs, int maxnevs, int *pnevs)
 {
     uint32_t data_length;
     uint16_t format, ntracks, division;
@@ -174,13 +172,13 @@ qms_smf2evs(const char *fname, int *pnevs)
                     (void) read_u8(fd);
                 }
             }
-            if (nevs == NEVENTS - 1) return SMF_TOOBIG;
+            if (nevs == maxnevs - 1) return SMF_TOOBIG;
         }
     }
     close(fd);
-    qsort(midi_evs, nevs, sizeof(Event), cmp_offset);
+    qsort(evs, nevs, sizeof(Event), cmp_offset);
     qsort(tempo_changes, ntcs, sizeof(TempoChange), cmp_offset);
-    ticks2samples(ticks_per_quarter, ntcs, nevs);
+    ticks2samples(ticks_per_quarter, ntcs, evs, nevs);
     if (pnevs) *pnevs = nevs;
     return SMF_OK;
 }
