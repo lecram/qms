@@ -89,6 +89,8 @@ qms_smf2evs(const char *fname, Event *evs, int maxnevs, int *pnevs)
     uint32_t usecs_per_quarter;
     uint32_t offset;
     uint8_t byte, status, chan, arg, vel;
+    uint16_t param, wheel;
+    uint8_t semirange, centrange;
     int smf_track;
     int ntcs, nevs;
     ntcs = nevs = 0;
@@ -103,6 +105,9 @@ qms_smf2evs(const char *fname, Event *evs, int maxnevs, int *pnevs)
     if (division & 0x8000) return SMF_BADDIV;
     ticks_per_quarter = division;
     status = 0; /* not meaningful, just to initialize variable */
+    param = 0;
+    semirange = 2;
+    centrange = 0;
     for (smf_track = 0; smf_track < ntracks; smf_track++) {
         if (read_beu32(fd) != 0x4D54726B) return SMF_BADSIG;
         data_length = read_beu32(fd);
@@ -155,11 +160,27 @@ qms_smf2evs(const char *fname, Event *evs, int maxnevs, int *pnevs)
                     break;
                 case 0xB:   /* control change */
                     switch (arg) {
+                    case 0x06:  /* data entry MSB */
+                        if (param == 0x0000)    /* pitch bend range */
+                            semirange = read_u8(fd);
+                        else (void) read_u8(fd);
+                        break;
                     case 0x07:  /* channel volume */
                         add_ev(qms_ev_vol(chan, read_u8(fd)));
                         break;
                     case 0x0A:  /* channel pan */
                         add_ev(qms_ev_pan(chan, read_u8(fd)));
+                        break;
+                    case 0x26:  /* data entry LSB */
+                        if (param == 0x0000)    /* pitch bend range */
+                            centrange = read_u8(fd);
+                        else (void) read_u8(fd);
+                        break;
+                    case 0x64:  /* RPN LSB */
+                        param = (param & 0xFF00) | read_u8(fd);
+                        break;
+                    case 0x65:  /* RPN MSB */
+                        param = (param & 0x00FF) | (read_u8(fd) << 7);
                         break;
                     default:    /* other control change (ignore) */
                         (void) read_u8(fd);
@@ -168,8 +189,10 @@ qms_smf2evs(const char *fname, Event *evs, int maxnevs, int *pnevs)
                 case 0xC:   /* program change */
                     add_ev(qms_ev_pac(chan, arg % NPACS));
                     break;
-                case 0xE:   /* pitch wheel change (ignore extra arg) */
-                    (void) read_u8(fd);
+                case 0xE:   /* pitch wheel change */
+                    wheel = arg | (read_u8(fd) << 7);
+                    wheel = ((((int16_t) wheel >> 1) - 0x1000) * semirange) + 0x2000;
+                    add_ev(qms_ev_wheel(chan, 0, wheel));
                 }
             }
             if (nevs == maxnevs - 1) return SMF_TOOBIG;

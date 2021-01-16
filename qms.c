@@ -9,7 +9,9 @@ typedef struct TrackState {
 typedef struct VoiceState {
     unsigned int phase_acc;   /* fixed point with NEXP.16 precision */
     unsigned int phase_step;  /* fixed point with NEXP.16 precision */
-    int velocity;    /* 0-127 */
+    int velocity;    /* 0x00-0x7F */
+    int pitch;       /* 0x00-0x7F */
+    int wheel;       /* (-0x2000)-(+0x1FFF)  default (zero) means center */
     /* int note_age; */
 } VoiceState;
 
@@ -83,15 +85,17 @@ qms_setpan(int track, int midipan)
 }
 
 static unsigned int
-midipitch2step(int m)
+midipitch2step(int m, int w)
 {
     unsigned int o, n; /* m = o * 12 + n */
+    uint32_t nwc;
     uint32_t c = 0x0EC98200; /* ln(2^(1/12)) in U0.32 */
     for (n = m+3, o = 0; n >= 12; n -= 12, o++) ;
     /* the following takes advantage of assumed constants:
      *   R = 44100 = 440 * 2205 / 22
      *   N = 2048 = 2^11 */
-    return ((fxp_expm1(n*c)>>5) * 22 / (2205<<6) + (22<<21) / 2205) << o;
+    nwc = ((n<<8)+((w>>4)-0x200))*(c>>8);
+    return ((fxp_expm1(nwc)>>5) * 22 / (2205<<6) + (22<<21) / 2205) << o;
 }
 
 void
@@ -103,7 +107,17 @@ qms_setvelocity(int track, int voice, int velocity)
 void
 qms_setnote(int track, int voice, int midipitch)
 {
-    voices[track][voice].phase_step = midipitch2step(midipitch);
+    int midiwheel = voices[track][voice].wheel + 0x2000;
+    voices[track][voice].phase_step = midipitch2step(midipitch, midiwheel);
+    voices[track][voice].pitch = midipitch;
+}
+
+void
+qms_setwheel(int track, int voice, int midiwheel)
+{
+    int midipitch = voices[track][voice].pitch;
+    voices[track][voice].phase_step = midipitch2step(midipitch, midiwheel);
+    voices[track][voice].wheel = midiwheel - 0x2000;
 }
 
 void
@@ -170,6 +184,9 @@ qms_runevents(Event *evs, unsigned int nevs)
             break;
         case PITCH:
             qms_setnote(track, voice, arg);
+            break;
+        case WHEEL:
+            qms_setwheel(track, voice, arg);
         }
     }
 }
