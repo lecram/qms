@@ -149,10 +149,12 @@ qms_smf2evs(const char *fname, Event *evs, int maxnevs, int *pnevs)
                 switch (status >> 4) {
                 case 0x8:   /* note off */
                     vel = read_u8(fd);
+                    if (chan == 0x9) break;
                     add_ev(qms_ev_vel(chan, 0, 0));
                     break;
                 case 0x9:   /* note on */
                     vel = read_u8(fd);
+                    if (chan == 0x9) break;
                     add_ev(qms_ev_vel(chan, 0, vel));
                     if (vel > 0) {
                         add_ev(qms_ev_pitch(chan, 0, arg));
