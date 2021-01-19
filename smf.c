@@ -91,6 +91,7 @@ qms_smf2evs(const char *fname, Event *evs, int maxnevs, int *pnevs)
     uint8_t byte, status, chan, arg, vel;
     uint16_t param, wheel;
     uint8_t semirange, centrange;
+    int negative_wheel;
     int smf_track;
     int ntcs, nevs;
     ntcs = nevs = 0;
@@ -175,7 +176,7 @@ qms_smf2evs(const char *fname, Event *evs, int maxnevs, int *pnevs)
                         break;
                     case 0x26:  /* data entry LSB */
                         if (param == 0x0000)    /* pitch bend range */
-                            centrange = read_u8(fd);
+                            centrange = read_u8(fd); /* ignored for now */
                         else (void) read_u8(fd);
                         break;
                     case 0x64:  /* RPN LSB */
@@ -192,8 +193,17 @@ qms_smf2evs(const char *fname, Event *evs, int maxnevs, int *pnevs)
                     add_ev(qms_ev_pac(chan, arg % NPACS));
                     break;
                 case 0xE:   /* pitch wheel change */
+                    /* TODO: dont' ignore centrange */
+                    /* range is {semirange} semitones + {centrange} cents */
                     wheel = arg | (read_u8(fd) << 7);
-                    wheel = ((((int16_t) wheel >> 1) - 0x1000) * semirange) + 0x2000;
+                    negative_wheel = wheel < 0x2000;
+                    if (negative_wheel)
+                        wheel = 0x2000 - wheel;
+                    else
+                        wheel = wheel - 0x2000;
+                    wheel = (wheel >> 5) * semirange;
+                    if (negative_wheel)
+                        wheel = ~wheel + 1;
                     add_ev(qms_ev_wheel(chan, 0, wheel));
                 }
             }
