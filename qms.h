@@ -37,6 +37,7 @@ void qms_setvelocity(int track, int voice, int velocity);
 void qms_setnote(int track, int voice, int midipitch);
 void qms_setwheel(int track, int voice, int wheel);
 void qms_advance(unsigned int nsamples);
+int  qms_runevent(Event *ev);
 void qms_runevents(Event *evs, unsigned int nevs);
 void qms_putsample(int16_t left, int16_t right);
 

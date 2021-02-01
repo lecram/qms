@@ -165,40 +165,49 @@ qms_advance(unsigned int nsamples)
     }
 }
 
+int
+qms_runevent(Event *ev)
+{
+    EvType ev_type;
+    unsigned int track, voice, arg;
+    int end = 0;
+    track = ev->event >> 28;
+    voice = ev->event >> 24 & 7;
+    ev_type = ev->event >> 16 & 0xFF;
+    arg = ev->event & 0xFFFF;
+    switch (ev_type) {
+    case END:
+        end = 1;
+        break;
+    case PAC:
+        qms_setpac(track, arg);
+        break;
+    case VOL:
+        qms_setvol(track, arg);
+        break;
+    case PAN:
+        qms_setpan(track, arg);
+        break;
+    case VEL:
+        qms_setvelocity(track, voice, arg);
+        break;
+    case PITCH:
+        qms_setnote(track, voice, arg);
+        break;
+    case WHEEL:
+        qms_setwheel(track, voice, arg);
+    }
+    return end;
+}
+
 void
 qms_runevents(Event *evs, unsigned int nevs)
 {
     uint32_t total_samples = 0;
-    EvType ev_type;
-    unsigned int track, voice, arg;
     for (; nevs--; evs++) {
         qms_advance(evs->offset - total_samples);
         total_samples = evs->offset;
-        track = evs->event >> 28;
-        voice = evs->event >> 24 & 7;
-        ev_type = evs->event >> 16 & 0xFF;
-        arg = evs->event & 0xFFFF;
-        switch (ev_type) {
-        case END:
-            nevs = 0;
+        if (qms_runevent(evs))
             break;
-        case PAC:
-            qms_setpac(track, arg);
-            break;
-        case VOL:
-            qms_setvol(track, arg);
-            break;
-        case PAN:
-            qms_setpan(track, arg);
-            break;
-        case VEL:
-            qms_setvelocity(track, voice, arg);
-            break;
-        case PITCH:
-            qms_setnote(track, voice, arg);
-            break;
-        case WHEEL:
-            qms_setwheel(track, voice, arg);
-        }
     }
 }
