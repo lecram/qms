@@ -22,6 +22,13 @@ typedef struct Event {
     uint32_t event;
 } Event;
 
+typedef struct Seeker {
+    Event *evs;
+    unsigned int nevs;
+    unsigned int ev_i;
+    unsigned int smp_i;
+} Seeker;
+
 #define qms_ev_pac(t, pac)      (((t) << 28) | (PAC << 16) | (pac))
 #define qms_ev_vol(t, vol)      (((t) << 28) | (VOL << 16) | (vol))
 #define qms_ev_pan(t, pan)      (((t) << 28) | (PAN << 16) | (pan))
@@ -39,6 +46,9 @@ void qms_setwheel(int track, int voice, int wheel);
 void qms_advance(unsigned int nsamples);
 int  qms_runevent(Event *ev);
 void qms_runevents(Event *evs, unsigned int nevs);
+void qms_load(Seeker *seeker, Event *evs, unsigned int nevs);
+void qms_seek(Seeker *seeker, unsigned int nsamples);
+int  qms_play(Seeker *seeker, unsigned int nsamples);
 void qms_putsample(int16_t left, int16_t right);
 
 #endif /* QMS_H */

@@ -211,3 +211,42 @@ qms_runevents(Event *evs, unsigned int nevs)
             break;
     }
 }
+
+void
+qms_load(Seeker *seeker, Event *evs, unsigned int nevs)
+{
+    seeker->evs = evs;
+    seeker->nevs = nevs;
+    seeker->ev_i = 0;
+    seeker->smp_i = 0;
+}
+
+void
+qms_seek(Seeker *seeker, unsigned int nsamples)
+{
+    for (seeker->ev_i = 0; seeker->ev_i < seeker->nevs; seeker->ev_i++) {
+        if (seeker->evs[seeker->ev_i].offset > nsamples)
+            break;
+        qms_runevent(&seeker->evs[seeker->ev_i]);
+    }
+    seeker->smp_i = nsamples;
+}
+
+int
+qms_play(Seeker *seeker, unsigned int nsamples)
+{
+    unsigned int nadv;
+    while (seeker->smp_i + nsamples >= seeker->evs[seeker->ev_i].offset) {
+        nadv = seeker->evs[seeker->ev_i].offset - seeker->smp_i;
+        qms_advance(nadv);
+        qms_runevent(&seeker->evs[seeker->ev_i]);
+        seeker->ev_i++;
+        if (seeker->ev_i == seeker->nevs)
+            return 1;
+        nsamples -= nadv;
+        seeker->smp_i += nadv;
+    }
+    qms_advance(nsamples);
+    seeker->smp_i += nsamples;
+    return 0;
+}
