@@ -27,6 +27,7 @@ typedef struct Seeker {
     unsigned int nevs;
     unsigned int ev_i;
     unsigned int smp_i;
+    unsigned int dur; /* nsmp = nsmp * (dur+1) / 16   (15 means 100%) */
 } Seeker;
 
 #define qms_ev_pac(t, pac)      (((t) << 28) | (PAC << 16) | (pac))

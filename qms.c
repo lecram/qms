@@ -219,6 +219,7 @@ qms_load(Seeker *seeker, Event *evs, unsigned int nevs)
     seeker->nevs = nevs;
     seeker->ev_i = 0;
     seeker->smp_i = 0;
+    seeker->dur = 15;
 }
 
 void
@@ -238,7 +239,7 @@ qms_play(Seeker *seeker, unsigned int nsamples)
     unsigned int nadv;
     while (seeker->smp_i + nsamples >= seeker->evs[seeker->ev_i].offset) {
         nadv = seeker->evs[seeker->ev_i].offset - seeker->smp_i;
-        qms_advance(nadv);
+        qms_advance(nadv * (seeker->dur+1) >> 4);
         qms_runevent(&seeker->evs[seeker->ev_i]);
         seeker->ev_i++;
         if (seeker->ev_i == seeker->nevs)
@@ -246,7 +247,7 @@ qms_play(Seeker *seeker, unsigned int nsamples)
         nsamples -= nadv;
         seeker->smp_i += nadv;
     }
-    qms_advance(nsamples);
+    qms_advance(nsamples * (seeker->dur+1) >> 4);
     seeker->smp_i += nsamples;
     return 0;
 }
