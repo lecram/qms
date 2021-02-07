@@ -2,6 +2,7 @@
 
 typedef struct TrackState {
     int pac;   /* < NPACS */
+    int atk;   /*  attack duration in samples */
     int vol;   /* 127-0         default (zero) means maximum */
     int pan;   /* (-64)-(+63)   default (zero) means center */
 } TrackState;
@@ -12,7 +13,7 @@ typedef struct VoiceState {
     int velocity;    /* 0x00-0x7F */
     int pitch;       /* 0x00-0x7F */
     int wheel;       /* S7.8    default (zero) means center */
-    /* int note_age; */
+    int note_age;    /* for amplitude envelope */
 } VoiceState;
 
 static int16_t wavetables[NPACS][N];
@@ -70,6 +71,7 @@ void
 qms_setpac(int track, int pac)
 {
     tracks[track].pac = pac;
+    tracks[track].atk = 900;
 }
 
 void
@@ -122,6 +124,7 @@ qms_setnote(int track, int voice, int midipitch)
     int wheel = voices[track][voice].wheel;
     voices[track][voice].phase_step = midipitch2step(midipitch, wheel);
     voices[track][voice].pitch = midipitch;
+    voices[track][voice].note_age = 0;
 }
 
 void
@@ -151,7 +154,12 @@ qms_advance(unsigned int nsamples)
             pac = wavetables[track->pac];
             for (vi = 0; vi < NVOICES; vi++) {
                 voice = &voices[ti][vi];
-                amp = pac[voice->phase_acc >> 16] * voice->velocity >> 7;
+                amp = pac[voice->phase_acc >> 16];
+                amp = amp * voice->velocity >> 7;
+                if (voice->note_age < 16)
+                    amp = amp * (16 - voice->note_age++) >> 4;
+                else if (voice->note_age < track->atk + 16)
+                    amp = amp * (voice->note_age++ - 16) / track->atk;
                 left  += amp * lvol >> 14;
                 right += amp * rvol >> 14;
                 voice->phase_acc += voice->phase_step;
